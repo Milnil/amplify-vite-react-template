@@ -9,16 +9,12 @@ const schema = a.schema({
   .authorization((allow) => [allow.owner()]),
 
   Conversation: a.model({
-    title:        a.string().required(),
+    title: a.string().required(),
+    
     // back-references
     participants: a.hasMany("Participant", "conversationID"),
     messages:     a.hasMany("Message",     "conversationID"),
   })
-  // list conversations by creation time and by last update time
-  .secondaryIndexes((idx) => [
-    idx("createdAt").queryField("conversationsByCreatedAt"),
-    idx("updatedAt").queryField("conversationsByUpdatedAt"),
-  ])
   .authorization((allow) => [allow.publicApiKey()]),
 
   Participant: a.model({
