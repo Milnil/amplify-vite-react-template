@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import type { Schema } from "../amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { createConversation, fetchMessages, fetchConversations, deleteConversation } from './funcs.ts';
+import { createConversation, fetchConversations, deleteConversation } from './funcs.ts';
+import { useMessagesForConversation } from "./hooks/useMessagesForConversation.ts";
 
 const client = generateClient<Schema>();
 
 export default function App() {
   const { user, signOut } = useAuthenticator();
-  // Log Cognito identifiers for debugging
 
   const myID = user?.username ?? user?.signInDetails?.loginId;
   if (!myID) {
@@ -17,9 +17,10 @@ export default function App() {
 
   const [convos, setConvos] = useState<Schema["Conversation"]["type"][]>([]);
   const [current, setCurrent] = useState<Schema["Conversation"]["type"] | null>(null);
-  const [messages, setMessages] = useState<Schema["Message"]["type"][]>([]);
+  const messages = useMessagesForConversation(current?.id);
+
   const [newMsg, setNewMsg] = useState<string>("");
-  type Message = Schema['Message']['type'];
+  //type Message = Schema['Message']['type'];
 
 
   // Fetch initial conversations and subscribe to changes
@@ -48,27 +49,6 @@ export default function App() {
     return () => sub.unsubscribe();
   }, [myID]);
 
-  // Load and subscribe to messages for the selected conversation
-  useEffect(() => {
-    if (!current) return;
-
-    fetchMessages(current.id).then(sorted => setMessages(sorted));
-
-    const sortByTime = (a: Message, b: Message) =>
-      new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime();
-
-    const sub = client.models.Message.observeQuery({
-      filter: { conversationID: { eq: current.id } }
-    }).subscribe({
-      next: ({ items }) => {
-        const sorted = items.slice().sort(sortByTime);
-        setMessages(sorted);
-      },
-      error: console.error
-    });
-
-    return () => sub.unsubscribe();
-  }, [current]);
 
   async function createConvo() {
     const convotitle = window.prompt("Conversation title?");
@@ -97,10 +77,9 @@ export default function App() {
         content: newMsg.trim()
       });
       if (!result.data) throw new Error("No message returned from AWS");
-      const createdMessage = result.data;
+      //const createdMessage = result.data;
 
       // UI update
-      setMessages(prev => [...prev, createdMessage]);
       setNewMsg("");
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -115,7 +94,6 @@ export default function App() {
       await deleteConversation(current.id)
       setConvos(prev => prev.filter(c => c.id !== current.id))
       setCurrent(null)
-      setMessages([])
     } catch (err) {
       console.error(err)
       alert('Failed to delete conversation')
