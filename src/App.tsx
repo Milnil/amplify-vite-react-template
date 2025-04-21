@@ -19,7 +19,7 @@ export default function App() {
   const [current, setCurrent] = useState<Schema["Conversation"]["type"] | null>(null);
   const [messages, setMessages] = useState<Schema["Message"]["type"][]>([]);
   const [newMsg, setNewMsg] = useState<string>("");
-
+  type Message = Schema['Message']['type'];
 
 
   // Fetch initial conversations and subscribe to changes
@@ -54,12 +54,11 @@ export default function App() {
 
     fetchMessages(current.id).then(sorted => setMessages(sorted));
 
-    const sortByTime = (a, b) =>
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    const sortByTime = (a: Message, b: Message) =>
+      new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime();
 
     const sub = client.models.Message.observeQuery({
-      filter: { conversationID: { eq: current.id } },
-      sort: { field: "createdAt", direction: "DESC" }
+      filter: { conversationID: { eq: current.id } }
     }).subscribe({
       next: ({ items }) => {
         const sorted = items.slice().sort(sortByTime);
@@ -195,7 +194,7 @@ export default function App() {
                     <div>
                       <strong>{m.senderID}</strong>
                       <span style={{ color: '#666', fontSize: '0.8em', marginLeft: 8 }}>
-                        {new Date(m.createdAt).toLocaleString()}
+                        {new Date(m.createdAt || '').toLocaleString()}
                       </span>
                     </div>
                     <div>{m.content}</div>

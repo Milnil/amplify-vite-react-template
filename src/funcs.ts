@@ -1,12 +1,12 @@
 // funcs.ts (data layer)
 import { Schema } from "../amplify/data/resource"
 import { generateClient } from "aws-amplify/data"
-import { getCurrentUser } from "aws-amplify/auth"
+//import { getCurrentUser } from "aws-amplify/auth"
 
 const client = generateClient<Schema>()
 
 type Conversation = Schema["Conversation"]["type"]
-type Participant = Schema["Participant"]["type"]
+//type Participant = Schema["Participant"]["type"]
 
 
 /**
@@ -52,15 +52,14 @@ export async function createConversation(
 export async function fetchMessages(
   conversationID: string
 ): Promise<Schema['Message']['type'][]> {
-  const res = await client.models.Conversation.get(
-    { id: conversationID },
-    { selectionSet: ['messages.*'] }
-  )
-  const msgs = res.data?.messages ?? []
-  // sort ascending by createdAt timestamp
-  return msgs.sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  )
+  const res = await client.models.Message.list({
+    filter: { conversationID: { eq: conversationID } }
+  });
+  const msgs = res.data ?? [];
+  // In case the API sort is ever inconsistent, enforce it client‑side:
+  return msgs.slice().sort((a, b) =>
+    new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
+  );
 }
 
 
