@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { Schema } from "../amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { createConversation, fetchConversations, deleteConversation } from './funcs.ts';
+import { createConversation, fetchConversations, deleteConversation, sendMessage as sendMessageAPI } from './funcs.ts';
 import { useMessagesForConversation } from "./hooks/useMessagesForConversation.ts";
 
 const client = generateClient<Schema>();
@@ -67,17 +67,12 @@ export default function App() {
     }
   }
 
-  async function sendMessage() {
+  async function sendMessage(e: React.FormEvent) {
+    e.preventDefault();
     if (!current || !newMsg.trim()) return;
 
     try {
-      const result = await client.models.Message.create({
-        conversationID: current.id,
-        senderID: myID,
-        content: newMsg.trim()
-      });
-      if (!result.data) throw new Error("No message returned from AWS");
-      //const createdMessage = result.data;
+      await sendMessageAPI(current.id, myID, newMsg);
 
       // UI update
       setNewMsg("");
@@ -181,10 +176,9 @@ export default function App() {
               )}
             </div>
             <form
-              onSubmit={e => {
-                e.preventDefault();
-                sendMessage();
-              }}
+              onSubmit={
+                sendMessage
+              }
               style={{ display: "flex", marginTop: 12 }}>
               <input
                 type="text"

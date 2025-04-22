@@ -66,6 +66,7 @@ export async function fetchMessages(
 /**
  * Fetches and returns all conversations the given user participates in,
  * sorted by most recently updated first.
+ * @param userId - id of the user to fetch conversations for
  */
 export async function fetchConversations(
   userId: string
@@ -92,6 +93,7 @@ export async function fetchConversations(
 
 /**
  * Deletes a conversation and all its messages and participants.
+ * @param conversationID - ID of the conversation to delete
  */
 export async function deleteConversation(
   conversationID: string
@@ -110,4 +112,33 @@ export async function deleteConversation(
     convo.participants.map(p => client.models.Participant.delete({ id: p.id }))
   );
   await client.models.Conversation.delete({ id: conversationID });
+}
+
+
+/**
+ * Sends a message in a conversation, returns the created Message object.
+ * @param conversationId - ID of the conversation to send the message in
+ * @param senderId - ID of the participant to attach the message to
+ * @param content - text contained within the message
+ */
+export async function sendMessage(
+  conversationId: string,
+  senderId: string,
+  content: string
+) {
+  if (!conversationId || !content.trim()) {
+    throw new Error("conversationId and non‑empty content required");
+  }
+
+  const result = await client.models.Message.create({
+    conversationID: conversationId,
+    senderID: senderId,
+    content: content.trim(),
+  });
+
+  if (!result.data) {
+    throw new Error("No message returned from AWS");
+  }
+
+  return result.data;
 }
